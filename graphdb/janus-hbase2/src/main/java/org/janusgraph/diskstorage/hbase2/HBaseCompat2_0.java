@@ -15,13 +15,15 @@
 package org.janusgraph.diskstorage.hbase2;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
+//import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
+//import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.TableDescriptor;
-import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
+//import org.apache.hadoop.hbase.client.TableDescriptor;
+//import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
 import org.apache.hadoop.hbase.io.compress.Compression;
 
 import java.io.IOException;
@@ -29,15 +31,16 @@ import java.io.IOException;
 public class HBaseCompat2_0 implements HBaseCompat {
 
     @Override
-    public ColumnFamilyDescriptor setCompression(ColumnFamilyDescriptor cd, String algo) {
-        return ColumnFamilyDescriptorBuilder.newBuilder(cd).setCompressionType(Compression.Algorithm.valueOf(algo)).build();
+    public HColumnDescriptor setCompression(HColumnDescriptor cd, String algo) {
+        return new HColumnDescriptor(cd).setCompressionType(Compression.Algorithm.valueOf(algo));
+//        return ColumnFamilyDescriptorBuilder.newBuilder(cd).setCompressionType(Compression.Algorithm.valueOf(algo)).build();
     }
 
     @Override
-    public TableDescriptor newTableDescriptor(String tableName) {
+    public HTableDescriptor newTableDescriptor(String tableName) {
         TableName tn = TableName.valueOf(tableName);
-
-        return TableDescriptorBuilder.newBuilder(tn).build();
+        return new HTableDescriptor(tn);
+//        return TableDescriptorBuilder.newBuilder(tn).build();
     }
 
     @Override
@@ -47,9 +50,12 @@ public class HBaseCompat2_0 implements HBaseCompat {
     }
 
     @Override
-    public TableDescriptor addColumnFamilyToTableDescriptor(TableDescriptor tdesc, ColumnFamilyDescriptor cdesc)
+    public HTableDescriptor addColumnFamilyToTableDescriptor(HTableDescriptor tdesc, HColumnDescriptor cdesc)
     {
-        return TableDescriptorBuilder.newBuilder(tdesc).addColumnFamily(cdesc).build();
+        HTableDescriptor ht=new HTableDescriptor(tdesc);
+        ht.addFamily(cdesc);
+        return ht;
+//        return TableDescriptorBuilder.newBuilder(tdesc).addColumnFamily(cdesc).build();
     }
 
     @Override

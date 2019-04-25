@@ -22,20 +22,22 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.HRegionLocation;
+import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableNotEnabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
+//import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
+//import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Row;
-import org.apache.hadoop.hbase.client.TableDescriptor;
+//import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
@@ -694,10 +696,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return s;
     }
 
-    private TableDescriptor ensureTableExists(String tableName, String initialCFName, int ttlInSeconds) throws BackendException {
+    private HTableDescriptor ensureTableExists(String tableName, String initialCFName, int ttlInSeconds) throws BackendException {
         AdminMask adm = null;
 
-        TableDescriptor desc;
+        HTableDescriptor desc;
 
         try { // Create our table, if necessary
             adm = getAdminInterface();
@@ -711,7 +713,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 // Check and warn if long and short cf names are mixedly used for the same table.
                 if (shortCfNames && initialCFName.equals(shortCfNameMap.get(SYSTEM_PROPERTIES_STORE_NAME))) {
                     String longCFName = shortCfNameMap.inverse().get(initialCFName);
-                    if (desc.getColumnFamily(Bytes.toBytes(longCFName)) != null) {
+                    if (desc.getFamily(Bytes.toBytes(longCFName)) != null) {
                         logger.warn("Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, longCFName);
                         logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
@@ -719,7 +721,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
                 else if (!shortCfNames && initialCFName.equals(SYSTEM_PROPERTIES_STORE_NAME)) {
                     String shortCFName = shortCfNameMap.get(initialCFName);
-                    if (desc.getColumnFamily(Bytes.toBytes(shortCFName)) != null) {
+                    if (desc.getFamily(Bytes.toBytes(shortCFName)) != null) {
                         logger.warn("Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, shortCFName);
                         logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
@@ -737,10 +739,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return desc;
     }
 
-    private TableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, AdminMask adm) throws IOException {
-        TableDescriptor desc = compat.newTableDescriptor(tableName);
+    private HTableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, AdminMask adm) throws IOException {
+        HTableDescriptor desc = compat.newTableDescriptor(tableName);
 
-        ColumnFamilyDescriptor cdesc = ColumnFamilyDescriptorBuilder.of(cfName);
+        HColumnDescriptor cdesc =new HColumnDescriptor(cfName);
         cdesc = setCFOptions(cdesc, ttlInSeconds);
 
         desc = compat.addColumnFamilyToTableDescriptor(desc, cdesc);
@@ -799,11 +801,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         AdminMask adm = null;
         try {
             adm = getAdminInterface();
-            TableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
+            HTableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
 
             Preconditions.checkNotNull(desc);
 
-            ColumnFamilyDescriptor cf = desc.getColumnFamily(Bytes.toBytes(columnFamily));
+            HColumnDescriptor cf = desc.getFamily(Bytes.toBytes(columnFamily));
 
             // Create our column family, if necessary
             if (cf == null) {
@@ -818,8 +820,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
 
                 try {
-                    ColumnFamilyDescriptor cdesc = ColumnFamilyDescriptorBuilder.of(columnFamily);
-
+//                    ColumnFamilyDescriptor cdesc = ColumnFamilyDescriptorBuilder.of(columnFamily);
+                    HColumnDescriptor cdesc=new HColumnDescriptor(columnFamily);
                     setCFOptions(cdesc, ttlInSeconds);
 
                     adm.addColumn(tableName, cdesc);
@@ -846,15 +848,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
-    private ColumnFamilyDescriptor setCFOptions(ColumnFamilyDescriptor cdesc, int ttlInSeconds) {
-        ColumnFamilyDescriptor ret = null;
+    private HColumnDescriptor setCFOptions(HColumnDescriptor cdesc, int ttlInSeconds) {
+        HColumnDescriptor ret = null;
 
         if (null != compression && !compression.equals(COMPRESSION_DEFAULT)) {
             ret = compat.setCompression(cdesc, compression);
         }
 
         if (ttlInSeconds > 0) {
-            ret = ColumnFamilyDescriptorBuilder.newBuilder(cdesc).setTimeToLive(ttlInSeconds).build();
+            ret = new HColumnDescriptor(cdesc).setTimeToLive(ttlInSeconds);
+//            ret = ColumnFamilyDescriptorBuilder.newBuilder(cdesc).setTimeToLive(ttlInSeconds).build();
         }
 
         return ret;

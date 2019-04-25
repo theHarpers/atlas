@@ -39,7 +39,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -154,7 +154,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
             <exclusions>
@@ -175,24 +175,24 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-common</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-hadoop2-compat</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-hadoop-compat</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -228,13 +228,13 @@
             <artifactId>hbase-zookeeper</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-common</artifactId>
             <type>test-jar</type>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -242,7 +242,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-testing-util</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase2.version}</version>
         </dependency>
 
     </dependencies>

@@ -39,8 +39,8 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
-            <version>${hbase.version}</version>
-            <scope>provided</scope>
+            <version>${hbase2.version}</version>
+            <!--<scope>provided</scope>-->
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
@@ -51,6 +51,12 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>${hbase2.version}</version>
+            <!--<scope>provided</scope>-->
         </dependency>
     </dependencies>
 </project>
