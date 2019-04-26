@@ -45,6 +45,7 @@ public class AtlasPatchService implements Service {
         LOG.info("PatchService: Started.");
 
         patchManager.applyAll();
+        LOG.info("Patchservice Start Finished");
     }
 
     @Override
