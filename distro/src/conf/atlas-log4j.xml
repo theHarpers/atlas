@@ -61,7 +61,6 @@
         <param name="File" value="${atlas.log.dir}/metric.log"/>
         <param name="Append" value="true"/>
         <param name="maxFileSize" value="100MB" />
-        <param name="maxFileSize" value="100MB" />
         <param name="maxBackupIndex" value="20" />
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %x %m%n"/>
@@ -71,6 +70,8 @@
     <appender name="FAILED" class="org.apache.log4j.RollingFileAppender">
         <param name="File" value="${atlas.log.dir}/failed.log"/>
         <param name="Append" value="true"/>
+        <param name="maxFileSize" value="100MB" />
+        <param name="maxBackupIndex" value="20" />
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %m%n"/>
         </layout>

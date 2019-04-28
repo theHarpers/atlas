@@ -531,6 +531,48 @@
                     "isUnique": false
                 }
             ]
+        },
+        {
+            "name": "hive_partition",
+            "superTypes": [
+                "DataSet"
+            ],
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "createTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "lastAccessTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "retention",
+                    "typeName": "int",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "temporary",
+                    "typeName": "boolean",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
         }
     ],
     "relationshipDefs": [
@@ -603,7 +645,7 @@
             "name": "hive_table_storagedesc",
             "serviceType": "hive",
             "typeVersion": "1.2",
-            "relationshipCategory": "COMPOSITION",
+            "relationshipCategory": "AGGREGATION",
             "relationshipLabel": "__hive_table.sd",
             "endDef1": {
                 "type": "hive_table",
@@ -657,6 +699,50 @@
                 "type": "hive_process_execution",
                 "name": "process",
                 "cardinality": "SINGLE"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_partition_storagedesc",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "AGGREGATION",
+            "relationshipLabel": "__hive_partition.sd",
+            "endDef1": {
+                "type": "hive_partition",
+                "name": "sd",
+                "isContainer": true,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "hive_storagedesc",
+                "name": "partition",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_table_partitions",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__hive_table.partition",
+            "endDef1": {
+                "type": "hive_partition",
+                "name": "table",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "hive_table",
+                "name": "partitions",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
             },
             "propagateTags": "NONE"
         }
