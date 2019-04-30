@@ -515,18 +515,21 @@ public class HiveMetaStoreBridge
     {
         try {
             AtlasEntityWithExtInfo ret;
-            AtlasEntityWithExtInfo tableEntity = findTableEntity(table);
+            AtlasEntityWithExtInfo tableEntity = findTableEntity(table, false);
 
             if (tableEntity == null) {
                 tableEntity = toTableEntity(dbEntity, table);
-
                 ret = registerInstance(tableEntity);
             }
             else {
+                for (AtlasEntity entity : tableEntity.getReferredEntities().values()) {
+                    if (!entity.getTypeName().equals(HiveDataTypes.HIVE_PARTITION.getName())) {
+                        clearRelationshipAttributes(entity);
+                    }
+                }
                 LOG.info("Table {}.{} is already registered with id {}. Updating entity.", table.getDbName(), table.getTableName(), tableEntity.getEntity().getGuid());
 
                 ret = toTableEntity(dbEntity, table, tableEntity);
-
                 updateInstance(ret);
             }
 
@@ -580,7 +583,7 @@ public class HiveMetaStoreBridge
         partitionEntity.setAttribute(ATTRIBUTE_STORAGEDESC, BaseHiveEvent.getObjectId(sdEntity));
         partition.addReferredEntity(sdEntity);
 
-        partition.addReferredEntity(tableEntity);
+//        partition.addReferredEntity(tableEntity);
         return partition;
     }
 
@@ -957,7 +960,7 @@ public class HiveMetaStoreBridge
      * @return table entity from Atlas  if exists, else null
      * @throws Exception
      */
-    private AtlasEntityWithExtInfo findTableEntity(Table hiveTable)
+    private AtlasEntityWithExtInfo findTableEntity(Table hiveTable, boolean clear)
             throws Exception
     {
         if (LOG.isDebugEnabled()) {
@@ -967,7 +970,7 @@ public class HiveMetaStoreBridge
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
         String tblQualifiedName = getTableQualifiedName(getClusterName(), hiveTable.getDbName(), hiveTable.getTableName());
 
-        return findEntity(typeName, tblQualifiedName);
+        return findEntity(typeName, tblQualifiedName, clear);
     }
 
     private AtlasEntityWithExtInfo findProcessEntity(String qualifiedName)
@@ -982,7 +985,7 @@ public class HiveMetaStoreBridge
         return findEntity(typeName, qualifiedName);
     }
 
-    private AtlasEntityWithExtInfo findEntity(final String typeName, final String qualifiedName)
+    private AtlasEntityWithExtInfo findEntity(final String typeName, final String qualifiedName, boolean clear)
             throws AtlasServiceException
     {
         AtlasEntityWithExtInfo ret = null;
@@ -997,10 +1000,16 @@ public class HiveMetaStoreBridge
 
             throw e;
         }
-
-        clearRelationshipAttributes(ret);
-
+        if (clear) {
+            clearRelationshipAttributes(ret);
+        }
         return ret;
+    }
+
+    private AtlasEntityWithExtInfo findEntity(final String typeName, final String qualifiedName)
+            throws AtlasServiceException
+    {
+        return findEntity(typeName, qualifiedName, true);
     }
 
     private String getCreateTableString(Table table, String location)
@@ -1133,7 +1142,6 @@ public class HiveMetaStoreBridge
             if (entities.getEntities() != null) {
                 for (AtlasEntity entity : entities.getEntities()) {
                     clearRelationshipAttributes(entity);
-                    ;
                 }
             }
 

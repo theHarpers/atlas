@@ -148,6 +148,7 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_BUCKET                    = "bucket";
     public static final String ATTRIBUTE_HOSTNAME                  = "hostName";
     public static final String ATTRIBUTE_PARTITION                 = "partition";
+    public static final String ATTRIBUTE_PARTITIONS                 = "partitions";
 
     public static final String HBASE_STORAGE_HANDLER_CLASS         = "org.apache.hadoop.hive.hbase.HBaseStorageHandler";
     public static final String HBASE_DEFAULT_NAMESPACE             = "default";
