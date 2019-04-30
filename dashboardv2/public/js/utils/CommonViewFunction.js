@@ -88,7 +88,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
                     } else {
-                        return val;
+                        return val.sort();
                     }
                 } else {
                     return "N/A";
@@ -110,6 +110,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             id = data.guid;
                         }
                         if (value.length > 0) {
+
                             scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + getValue(value) + '</a>');
                         } else {
                             scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(id) + '</a>');
@@ -230,6 +231,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
             var keyValue = valueObject[key],
                 listCount = showListCount && _.isArray(keyValue) && keyValue.length > 0 ? ' (' + numberFormat(keyValue.length) + ')' : "";
+            if (_.isArray(keyValue)){
+                keyValue.sort(function(a,b){return _.isObject(a)?(_.isObject(a.attributes)?(a.attributes.name.localeCompare(b.attributes.name)):0):0})
+            }
             var defEntity = _.find(attributeDefs, { name: key });
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();

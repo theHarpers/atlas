@@ -131,6 +131,8 @@ do
     -d) IMPORT_ARGS="$IMPORT_ARGS -d $1"; shift;;
     -t) IMPORT_ARGS="$IMPORT_ARGS -t $1"; shift;;
     -f) IMPORT_ARGS="$IMPORT_ARGS -f $1"; shift;;
+    -u) IMPORT_ARGS="$IMPORT_ARGS -u $1"; shift;;
+    -p) IMPORT_ARGS="$IMPORT_ARGS -p $1"; shift;;
     --database) IMPORT_ARGS="$IMPORT_ARGS --database $1"; shift;;
     --table) IMPORT_ARGS="$IMPORT_ARGS --table $1"; shift;;
     --filename) IMPORT_ARGS="$IMPORT_ARGS --filename $1"; shift;;
