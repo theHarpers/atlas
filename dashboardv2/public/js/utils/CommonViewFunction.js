@@ -88,7 +88,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
                     } else {
-                        return val.sort();
+                        return val;
                     }
                 } else {
                     return "N/A";
