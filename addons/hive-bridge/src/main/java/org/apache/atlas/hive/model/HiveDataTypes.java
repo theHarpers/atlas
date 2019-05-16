@@ -43,8 +43,7 @@ public enum HiveDataTypes {
     HIVE_ROLE,
     HIVE_TYPE,
     HIVE_PROCESS,
-    HIVE_COLUMN_LINEAGE,
-    HIVE_PROCESS_EXECUTION,
+    HIVE_COLUMN_LINEAGE
     // HIVE_VIEW,
     ;
 
