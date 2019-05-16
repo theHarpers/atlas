@@ -321,6 +321,22 @@
                                             <artifactId>jsr311-api</artifactId>
                                             <version>${jsr.version}</version>
                                         </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                            <artifactId>jackson-jaxrs-json-provider</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                            <artifactId>jackson-jaxrs-base</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.module</groupId>
+                                            <artifactId>jackson-module-jaxb-annotations</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+
                                     </artifactItems>
                                 </configuration>
                             </execution>
