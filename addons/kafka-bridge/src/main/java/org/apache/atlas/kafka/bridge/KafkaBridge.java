@@ -18,12 +18,11 @@
 
 package org.apache.atlas.kafka.bridge;
 
+import com.google.common.annotations.VisibleForTesting;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.kafka.common.security.JaasUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.kafka.model.KafkaDataTypes;
@@ -41,7 +40,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-
+import org.apache.kafka.common.security.JaasUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.collection.JavaConversions;
@@ -51,9 +50,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -237,8 +236,8 @@ public class KafkaBridge {
         ret.setAttribute(DESCRIPTION_ATTR, topic);
         ret.setAttribute(URI, topic);
 //        ret.setAttribute(PARTITION_COUNT, (Integer) zkUtils.getTopicPartitionCount(topic).get());
-        Map m= (Map) zkUtils.getPartitionsForTopics(JavaConversions.asScalaBuffer(Collections.singletonList(topic)));
-        ret.setAttribute(PARTITION_COUNT, ((Seq) m.get(topic)).size());
+        int size=zkUtils.getPartitionsForTopics(JavaConversions.asScalaBuffer(Collections.singletonList(topic))).get(topic).get().size();
+        ret.setAttribute(PARTITION_COUNT, size);
         return ret;
     }
 
