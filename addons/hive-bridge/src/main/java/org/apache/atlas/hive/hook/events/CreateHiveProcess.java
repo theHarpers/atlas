@@ -25,7 +25,6 @@ import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hive.ql.hooks.Entity;
-import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo.BaseColumnInfo;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo.Dependency;
@@ -109,10 +108,28 @@ public class CreateHiveProcess extends BaseHiveEvent {
                     if (entity != null) {
                         outputs.add(entity);
                     }
+
+                    if (entity != null && !context.isMetastoreHook()) {
+                        AtlasEntity ddlEntity = createHiveDDLEntity(entity);
+
+                        if (ddlEntity != null) {
+                            ret.addEntity(ddlEntity);
+                        }
+                    }
                 }
             }
 
-            if (!inputs.isEmpty() || !outputs.isEmpty()) {
+            boolean skipProcess = inputs.isEmpty() && outputs.isEmpty();
+
+            if (!skipProcess) {
+                if (inputs.isEmpty() && context.isSkippedInputEntity()) {
+                    skipProcess = true;
+                } else if (outputs.isEmpty() && context.isSkippedOutputEntity()) {
+                    skipProcess = true;
+                }
+            }
+
+            if (!skipProcess && !context.isMetastoreHook()) {
                 AtlasEntity process = getHiveProcessEntity(inputs, outputs);
 
                 ret.addEntity(process);

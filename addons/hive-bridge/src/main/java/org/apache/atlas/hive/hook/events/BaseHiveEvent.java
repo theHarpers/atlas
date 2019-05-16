@@ -18,7 +18,6 @@
 
 package org.apache.atlas.hive.hook.events;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
 import org.apache.atlas.hive.hook.HiveHook.PreprocessAction;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -28,7 +27,6 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.notification.HookNotification;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
@@ -52,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -80,6 +77,8 @@ public abstract class BaseHiveEvent {
     public static final String HIVE_TYPE_SERDE                     = "hive_serde";
     public static final String HIVE_TYPE_ORDER                     = "hive_order";
     public static final String HIVE_TYPE_PROCESS_EXECUTION         = "hive_process_execution";
+    public static final String HIVE_DB_DDL                         = "hive_db_ddl";
+    public static final String HIVE_TABLE_DDL                      = "hive_table_ddl";
     public static final String HDFS_TYPE_PATH                      = "hdfs_path";
     public static final String HBASE_TYPE_TABLE                    = "hbase_table";
     public static final String HBASE_TYPE_NAMESPACE                = "hbase_namespace";
@@ -147,6 +146,8 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_OBJECT_PREFIX             = "objectPrefix";
     public static final String ATTRIBUTE_BUCKET                    = "bucket";
     public static final String ATTRIBUTE_HOSTNAME                  = "hostName";
+    public static final String ATTRIBUTE_EXEC_TIME                 = "execTime";
+    public static final String ATTRIBUTE_DDL_QUERIES               = "ddlQueries";
 
     public static final String HBASE_STORAGE_HANDLER_CLASS         = "org.apache.hadoop.hive.hbase.HBaseStorageHandler";
     public static final String HBASE_DEFAULT_NAMESPACE             = "default";
@@ -246,17 +247,31 @@ public abstract class BaseHiveEvent {
 
         switch (entity.getType()) {
             case DATABASE: {
-                Database db = getHive().getDatabase(entity.getDatabase().getName());
+                if (!context.getIgnoreDummyDatabaseName().contains(entity.getDatabase().getName())) {
+                    Database db = getHive().getDatabase(entity.getDatabase().getName());
 
-                ret = toDbEntity(db);
+                    ret = toDbEntity(db);
+                }
             }
             break;
 
             case TABLE:
             case PARTITION: {
-                Table table = getHive().getTable(entity.getTable().getDbName(), entity.getTable().getTableName());
+                String  dbName    = entity.getTable().getDbName();
+                String  tableName = entity.getTable().getTableName();
+                boolean skipTable = StringUtils.isNotEmpty(context.getIgnoreValuesTmpTableNamePrefix()) && tableName.toLowerCase().startsWith(context.getIgnoreValuesTmpTableNamePrefix());
 
-                ret = toTableEntity(table, entityExtInfo);
+                if (!skipTable) {
+                    skipTable = context.getIgnoreDummyTableName().contains(tableName) && context.getIgnoreDummyDatabaseName().contains(dbName);
+                }
+
+                if (!skipTable) {
+                    Table table = getHive().getTable(dbName, tableName);
+
+                    ret = toTableEntity(table, entityExtInfo);
+                } else {
+                    context.registerSkippedEntity(entity);
+                }
             }
             break;
 
@@ -460,7 +475,7 @@ public abstract class BaseHiveEvent {
             ret.setAttribute(ATTRIBUTE_NUM_BUCKETS, sd.getNumBuckets());
             ret.setAttribute(ATTRIBUTE_STORED_AS_SUB_DIRECTORIES, sd.isStoredAsSubDirectories());
 
-            if (sd.getBucketCols().size() > 0) {
+            if (sd.getBucketCols() != null && sd.getBucketCols().size() > 0) {
                 ret.setAttribute(ATTRIBUTE_BUCKET_COLS, sd.getBucketCols());
             }
 
@@ -497,36 +512,38 @@ public abstract class BaseHiveEvent {
     }
 
     protected List<AtlasEntity> getColumnEntities(AtlasObjectId tableId, Table table, List<FieldSchema> fieldSchemas) {
-        List<AtlasEntity> ret          = new ArrayList<>();
-        boolean           isKnownTable = tableId.getGuid() == null;
+        List<AtlasEntity> ret            = new ArrayList<>();
+        boolean           isKnownTable   = tableId.getGuid() == null;
+        int               columnPosition = 0;
 
-        int columnPosition = 0;
-        for (FieldSchema fieldSchema : fieldSchemas) {
-            String      colQualifiedName = getQualifiedName(table, fieldSchema);
-            AtlasEntity column           = context.getEntity(colQualifiedName);
+        if (CollectionUtils.isNotEmpty(fieldSchemas)) {
+            for (FieldSchema fieldSchema : fieldSchemas) {
+                String      colQualifiedName = getQualifiedName(table, fieldSchema);
+                AtlasEntity column           = context.getEntity(colQualifiedName);
 
-            if (column == null) {
-                column = new AtlasEntity(HIVE_TYPE_COLUMN);
+                if (column == null) {
+                    column = new AtlasEntity(HIVE_TYPE_COLUMN);
 
-                // if column's table was sent in an earlier notification, set 'guid' to null - which will:
-                //  - result in this entity to be not included in 'referredEntities'
-                //  - cause Atlas server to resolve the entity by its qualifiedName
-                if (isKnownTable) {
-                    column.setGuid(null);
+                    // if column's table was sent in an earlier notification, set 'guid' to null - which will:
+                    //  - result in this entity to be not included in 'referredEntities'
+                    //  - cause Atlas server to resolve the entity by its qualifiedName
+                    if (isKnownTable) {
+                        column.setGuid(null);
+                    }
+
+                    column.setAttribute(ATTRIBUTE_TABLE, tableId);
+                    column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, colQualifiedName);
+                    column.setAttribute(ATTRIBUTE_NAME, fieldSchema.getName());
+                    column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
+                    column.setAttribute(ATTRIBUTE_COL_TYPE, fieldSchema.getType());
+                    column.setAttribute(ATTRIBUTE_COL_POSITION, columnPosition++);
+                    column.setAttribute(ATTRIBUTE_COMMENT, fieldSchema.getComment());
+
+                    context.putEntity(colQualifiedName, column);
                 }
 
-                column.setAttribute(ATTRIBUTE_TABLE, tableId);
-                column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, colQualifiedName);
-                column.setAttribute(ATTRIBUTE_NAME, fieldSchema.getName());
-                column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
-                column.setAttribute(ATTRIBUTE_COL_TYPE, fieldSchema.getType());
-                column.setAttribute(ATTRIBUTE_COL_POSITION, columnPosition++);
-                column.setAttribute(ATTRIBUTE_COMMENT, fieldSchema.getComment());
-
-                context.putEntity(colQualifiedName, column);
+                ret.add(column);
             }
-
-            ret.add(column);
         }
 
         return ret;
@@ -650,6 +667,35 @@ public abstract class BaseHiveEvent {
         ret.setAttribute(ATTRIBUTE_HOSTNAME, getContext().getHostName());
         ret.setRelationshipAttribute(ATTRIBUTE_PROCESS, AtlasTypeUtil.toAtlasRelatedObjectId(hiveProcess));
         return ret;
+    }
+
+    protected AtlasEntity createHiveDDLEntity(AtlasEntity dbOrTable) {
+        return createHiveDDLEntity(dbOrTable, false);
+    }
+
+    protected AtlasEntity createHiveDDLEntity(AtlasEntity dbOrTable, boolean excludeEntityGuid) {
+        AtlasObjectId objId   = BaseHiveEvent.getObjectId(dbOrTable);
+        AtlasEntity   hiveDDL = null;
+
+        if (excludeEntityGuid) {
+            objId.setGuid(null);
+        }
+
+        if (StringUtils.equals(objId.getTypeName(), HIVE_TYPE_DB)) {
+            hiveDDL = new AtlasEntity(HIVE_DB_DDL, ATTRIBUTE_DB, objId);
+        } else if (StringUtils.equals(objId.getTypeName(), HIVE_TYPE_TABLE)) {
+            hiveDDL = new AtlasEntity(HIVE_TABLE_DDL, ATTRIBUTE_TABLE, objId);
+        }
+
+        if (hiveDDL != null) {
+            hiveDDL.setAttribute(ATTRIBUTE_EXEC_TIME, getQueryStartTime());
+            hiveDDL.setAttribute(ATTRIBUTE_QUERY_TEXT, getQueryString());
+            hiveDDL.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
+            hiveDDL.setAttribute(ATTRIBUTE_NAME, getQueryString() + QNAME_SEP_PROCESS + getQueryStartTime().toString());
+            hiveDDL.setAttribute(ATTRIBUTE_QUALIFIED_NAME, hiveDDL.getAttribute(ATTRIBUTE_NAME));
+        }
+
+        return hiveDDL;
     }
 
     protected String getClusterName() {

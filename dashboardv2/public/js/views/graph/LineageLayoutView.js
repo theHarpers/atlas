@@ -161,6 +161,11 @@ define(['require',
                 var icon = $(e.currentTarget).find('i'),
                     panel = $(e.target).parents('.tab-pane').first();
                 icon.toggleClass('fa-expand fa-compress');
+                if(icon.hasClass('fa-expand')){
+                    icon.parent('button').attr("data-original-title","Full Screen");
+                }else{
+                    icon.parent('button').attr("data-original-title","Default View");
+                }
                 panel.toggleClass('fullscreen-mode');
             },
             onCheckUnwantedEntity: function(e) {
@@ -219,9 +224,6 @@ define(['require',
                             that.lineageData = $.extend(true, {}, data);
                             that.relationshipMap = that.crateLineageRelationshipHashMap(data);
                             that.guidEntityMap = $.extend(true, {}, data.guidEntityMap);
-                            if (that.lineageData) {
-                                that.renderLineageTypeSearch();
-                            }
                             that.generateData({ "relationshipMap": that.relationshipMap, "guidEntityMap": that.guidEntityMap });
                             that.toggleDisableState({
                                 "el": that.$(".graph-button-group button,select[data-id='selectDepth']")
@@ -442,6 +444,7 @@ define(['require',
                     this.fromToNodeData[this.guid]['isLineage'] = false;
                     this.findImpactNodeAndUpdateData({ "relationshipMap": filterRelationshipMap, "guid": this.guid, "getStyleObjStr": getStyleObjStr });
                 }
+                this.renderLineageTypeSearch();
                 this.createGraph();
             },
             findImpactNodeAndUpdateData: function(options) {
@@ -535,8 +538,11 @@ define(['require',
                         .attr('fill', 'url(#img_' + node.id + ')')
                         .attr('r', '24px')
                         .attr('data-stroke', node.id)
+                        .attr('stroke-width', "2px")
                         .attr("class", "nodeImage " + (currentNode ? "currentNode" : (node.isProcess ? "process" : "node")));
-
+                    if (currentNode) {
+                        shapeSvg.attr("stroke", "#fb4200")
+                    }
                     parent.insert("defs")
                         .append("pattern")
                         .attr("x", "0%")
@@ -756,17 +762,19 @@ define(['require',
                     });
 
                 svgGroup.selectAll("g.edgePath path.path").on('click', function(d) {
-                    var data = { obj: _.find(that.lineageData.relations, { "fromEntityId": d.v, "toEntityId": d.w }) },
-                        relationshipId = data.obj.relationshipId;
-                    require(['views/graph/PropagationPropertyModal'], function(PropagationPropertyModal) {
-                        var view = new PropagationPropertyModal({
-                            edgeInfo: data,
-                            relationshipId: relationshipId,
-                            lineageData: that.lineageData,
-                            apiGuid: that.apiGuid,
-                            detailPageFetchCollection: that.fetchCollection
+                    var data = { obj: _.find(that.lineageData.relations, { "fromEntityId": d.v, "toEntityId": d.w }) };
+                    if (data.obj) {
+                        var relationshipId = data.obj.relationshipId;
+                        require(['views/graph/PropagationPropertyModal'], function(PropagationPropertyModal) {
+                            var view = new PropagationPropertyModal({
+                                edgeInfo: data,
+                                relationshipId: relationshipId,
+                                lineageData: that.lineageData,
+                                apiGuid: that.apiGuid,
+                                detailPageFetchCollection: that.fetchCollection
+                            });
                         });
-                    });
+                    }
                 })
                 $('body').on('mouseover', '.d3-tip', function(el) {
                     that.activeTip = true;
@@ -815,18 +823,23 @@ define(['require',
                 }).init();
             },
             renderLineageTypeSearch: function() {
-                var that = this;
-                var lineageData = $.extend(true, {}, this.lineageData);
-                var data = [];
-
-                var typeStr = '<option></option>';
+                var that = this,
+                    lineageData = $.extend(true, {}, this.lineageData),
+                    data = [],
+                    typeStr = '<option></option>';
                 if (!_.isEmpty(lineageData)) {
                     _.each(lineageData.guidEntityMap, function(obj, index) {
+                        var nodeData = that.fromToNodeData[obj.guid];
+                        if (that.filterObj.isProcessHideCheck && nodeData && nodeData.isProcess) {
+                            return;
+                        } else if (that.filterObj.isDeletedEntityHideCheck && nodeData && nodeData.isDeleted) {
+                            return
+                        }
                         typeStr += '<option value="' + obj.guid + '">' + obj.attributes.name + '</option>';
                     });
                 }
                 that.ui.lineageTypeSearch.html(typeStr);
-                this.initilizelineageTypeSearch()
+                this.initilizelineageTypeSearch();
             },
             initilizelineageTypeSearch: function() {
                 var that = this;
@@ -936,9 +949,10 @@ define(['require',
                         scaleFactor = 1,
                         svgWidth = that.$('svg').width(),
                         svgHeight = that.$('svg').height();
-                    svgClone.setAttribute('width', svgWidth);
-                    svgClone.setAttribute('height', svgHeight);
-
+                    if (platform.name != "Chrome") {
+                        svgClone.setAttribute('width', svgWidth);
+                        svgClone.setAttribute('height', svgHeight);
+                    }
                     $('.hidden-svg').html(svgClone);
                     $(svgClone).find('>g').attr("transform", "scale(" + scaleFactor + ")");
                     var canvasOffset = { x: 150, y: 150 },
@@ -972,8 +986,9 @@ define(['require',
 
                     img.onload = function() {
                         try {
-                            var a = document.createElement("a");
-                            a.download = that.entityName + ".png";
+                            var a = document.createElement("a"),
+                                entityAttributes = that.entity && that.entity.attributes;
+                            a.download = ((entityAttributes && entityAttributes.qualifiedName) || "lineage_export") + ".png";
                             document.body.appendChild(a);
                             ctx.drawImage(img, 50, 50, canvas.width, canvas.height);
                             canvas.toBlob(function(blob) {
@@ -981,6 +996,7 @@ define(['require',
                                     Utils.notifyError({
                                         content: "There was an error in downloading Lineage!"
                                     });
+                                    that.toggleLoader(loaderTargetDiv);
                                     return;
                                 }
                                 a.href = DOMURL.createObjectURL(blob);
@@ -1004,6 +1020,7 @@ define(['require',
 
                     };
                     img.src = url;
+
                 }, 0)
             },
             toggleLoader: function(element) {
