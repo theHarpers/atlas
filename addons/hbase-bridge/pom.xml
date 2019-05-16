@@ -223,13 +223,13 @@
             <artifactId>atlas-client-v2</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-zookeeper</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-            <version>${hbase.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.apache.hbase</groupId>-->
+            <!--<artifactId>hbase-zookeeper</artifactId>-->
+            <!--<type>test-jar</type>-->
+            <!--<scope>test</scope>-->
+            <!--<version>${hbase.version}</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-common</artifactId>
