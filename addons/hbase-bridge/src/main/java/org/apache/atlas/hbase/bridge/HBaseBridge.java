@@ -39,13 +39,13 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,7 +211,8 @@ public class HBaseBridge {
 
         LOG.info("checking HBase availability..");
 
-        HBaseAdmin.available(conf);
+//        HBaseAdmin.available(conf);
+        HBaseAdmin.checkHBaseAvailable(conf);
 
         LOG.info("HBase is available");
 
@@ -253,10 +254,10 @@ public class HBaseBridge {
 
     public void importTable(final String tableName) throws Exception {
         String            tableNameStr = null;
-        TableDescriptor[] htds         = hbaseAdmin.listTables(Pattern.compile(tableName));
+        HTableDescriptor[] htds         = hbaseAdmin.listTables(Pattern.compile(tableName));
 
         if (ArrayUtils.isNotEmpty(htds)) {
-            for (TableDescriptor htd : htds) {
+            for (HTableDescriptor htd : htds) {
                 String tblNameWithNameSpace    = htd.getTableName().getNameWithNamespaceInclAsString();
                 String tblNameWithOutNameSpace = htd.getTableName().getNameAsString();
 
@@ -277,7 +278,7 @@ public class HBaseBridge {
                 String                 nsName       = new String(nsByte);
                 NamespaceDescriptor    nsDescriptor = hbaseAdmin.getNamespaceDescriptor(nsName);
                 AtlasEntityWithExtInfo entity       = createOrUpdateNameSpace(nsDescriptor);
-                ColumnFamilyDescriptor[]    hcdts        = htd.getColumnFamilies();
+                HColumnDescriptor[]    hcdts        = htd.getColumnFamilies();
 
                 createOrUpdateTable(nsName, tableNameStr, entity.getEntity(), htd, hcdts);
             }
@@ -297,10 +298,10 @@ public class HBaseBridge {
             }
         }
 
-        TableDescriptor[] htds = hbaseAdmin.listTables();
+        HTableDescriptor[] htds = hbaseAdmin.listTables();
 
         if (ArrayUtils.isNotEmpty(htds)) {
-            for (TableDescriptor htd : htds) {
+            for (HTableDescriptor htd : htds) {
                 String tableName = htd.getTableName().getNameAsString();
 
                 importTable(tableName);
@@ -311,7 +312,7 @@ public class HBaseBridge {
     private void importNameSpaceWithTable(String namespaceToImport, String tableToImport) throws Exception {
         importNameSpace(namespaceToImport);
 
-        List<TableDescriptor> hTableDescriptors = new ArrayList<>();
+        List<HTableDescriptor> hTableDescriptors = new ArrayList<>();
 
         if (StringUtils.isEmpty(tableToImport)) {
             List<NamespaceDescriptor> matchingNameSpaceDescriptors = getMatchingNameSpaces(namespaceToImport);
@@ -322,13 +323,13 @@ public class HBaseBridge {
         } else {
             tableToImport = namespaceToImport +":" + tableToImport;
 
-            TableDescriptor[] htds = hbaseAdmin.listTables(Pattern.compile(tableToImport));
+            HTableDescriptor[] htds = hbaseAdmin.listTables(Pattern.compile(tableToImport));
 
             hTableDescriptors.addAll(Arrays.asList(htds));
         }
 
         if (CollectionUtils.isNotEmpty(hTableDescriptors)) {
-            for (TableDescriptor htd : hTableDescriptors) {
+            for (HTableDescriptor htd : hTableDescriptors) {
                 String tblName = htd.getTableName().getNameAsString();
 
                 importTable(tblName);
@@ -353,11 +354,11 @@ public class HBaseBridge {
         return ret;
     }
 
-    private List<TableDescriptor> getTableDescriptors(List<NamespaceDescriptor> namespaceDescriptors) throws Exception {
-        List<TableDescriptor> ret = new ArrayList<>();
+    private List<HTableDescriptor> getTableDescriptors(List<NamespaceDescriptor> namespaceDescriptors) throws Exception {
+        List<HTableDescriptor> ret = new ArrayList<>();
 
         for(NamespaceDescriptor namespaceDescriptor:namespaceDescriptors) {
-            TableDescriptor[] tableDescriptors = hbaseAdmin.listTableDescriptorsByNamespace(namespaceDescriptor.getName());
+            HTableDescriptor[] tableDescriptors = hbaseAdmin.listTableDescriptorsByNamespace(namespaceDescriptor.getName());
 
             ret.addAll(Arrays.asList(tableDescriptors));
         }
@@ -388,7 +389,7 @@ public class HBaseBridge {
         return nsEntity;
     }
 
-    protected  AtlasEntityWithExtInfo  createOrUpdateTable(String nameSpace, String tableName, AtlasEntity nameSapceEntity, TableDescriptor htd, ColumnFamilyDescriptor[] hcdts) throws Exception {
+    protected  AtlasEntityWithExtInfo  createOrUpdateTable(String nameSpace, String tableName, AtlasEntity nameSapceEntity, HTableDescriptor htd, HColumnDescriptor[] hcdts) throws Exception {
         String                 owner            = htd.getOwnerString();
         String                 tblQualifiedName = getTableQualifiedName(clusterName, nameSpace, tableName);
         AtlasEntityWithExtInfo ret              = findTableEntityInAtlas(tblQualifiedName);
@@ -428,13 +429,13 @@ public class HBaseBridge {
         return ret;
     }
 
-    protected List<AtlasEntityWithExtInfo> createOrUpdateColumnFamilies(String nameSpace, String tableName, String owner, ColumnFamilyDescriptor[] hcdts , AtlasEntity tableEntity) throws Exception {
+    protected List<AtlasEntityWithExtInfo> createOrUpdateColumnFamilies(String nameSpace, String tableName, String owner, HColumnDescriptor[] hcdts , AtlasEntity tableEntity) throws Exception {
         List<AtlasEntityWithExtInfo > ret = new ArrayList<>();
 
         if (hcdts != null) {
             AtlasObjectId tableId = AtlasTypeUtil.getAtlasObjectId(tableEntity);
 
-            for (ColumnFamilyDescriptor columnFamilyDescriptor : hcdts) {
+            for (HColumnDescriptor columnFamilyDescriptor : hcdts) {
                 String                 cfName          = columnFamilyDescriptor.getNameAsString();
                 String                 cfQualifiedName = getColumnFamilyQualifiedName(clusterName, nameSpace, tableName, cfName);
                 AtlasEntityWithExtInfo cfEntity        = findColumnFamiltyEntityInAtlas(cfQualifiedName);
@@ -526,7 +527,7 @@ public class HBaseBridge {
         return ret;
     }
 
-    private AtlasEntity getTableEntity(String nameSpace, String tableName, String owner, AtlasEntity nameSpaceEntity, TableDescriptor htd, AtlasEntity atlasEntity) {
+    private AtlasEntity getTableEntity(String nameSpace, String tableName, String owner, AtlasEntity nameSpaceEntity, HTableDescriptor htd, AtlasEntity atlasEntity) {
         AtlasEntity ret = null;
 
         if (atlasEntity == null) {
@@ -549,12 +550,12 @@ public class HBaseBridge {
         ret.setAttribute(ATTR_TABLE_ISREADONLY, htd.isReadOnly());
         ret.setAttribute(ATTR_TABLE_ISCOMPACTION_ENABLED, htd.isCompactionEnabled());
         ret.setAttribute(ATTR_TABLE_DURABLILITY, (htd.getDurability() != null ? htd.getDurability().name() : null));
-        ret.setAttribute(ATTR_TABLE_NORMALIZATION_ENABLED, htd.isNormalizationEnabled());
+//        ret.setAttribute(ATTR_TABLE_NORMALIZATION_ENABLED, htd.isNormalizationEnabled());
 
         return ret;
     }
 
-    private AtlasEntity getColumnFamilyEntity(String nameSpace, String tableName, String owner, ColumnFamilyDescriptor hcdt, AtlasObjectId tableId, AtlasEntity atlasEntity){
+    private AtlasEntity getColumnFamilyEntity(String nameSpace, String tableName, String owner, HColumnDescriptor hcdt, AtlasObjectId tableId, AtlasEntity atlasEntity){
         AtlasEntity ret = null;
 
         if (atlasEntity == null) {
@@ -587,10 +588,10 @@ public class HBaseBridge {
         ret.setAttribute(ATTR_CF_MIN_VERSIONS, hcdt.getMinVersions());
         ret.setAttribute(ATTR_CF_PREFETCH_BLOCK_ONOPEN, hcdt.isPrefetchBlocksOnOpen());
         ret.setAttribute(ATTR_CF_TTL, hcdt.getTimeToLive());
-        ret.setAttribute(ATTR_CF_INMEMORY_COMPACTION_POLICY, (hcdt.getInMemoryCompaction() != null ? hcdt.getInMemoryCompaction().name():null));
-        ret.setAttribute(ATTR_CF_MOB_COMPATCTPARTITION_POLICY, ( hcdt.getMobCompactPartitionPolicy() != null ? hcdt.getMobCompactPartitionPolicy().name():null));
-        ret.setAttribute(ATTR_CF_MOB_ENABLED,hcdt.isMobEnabled());
-        ret.setAttribute(ATTR_CF_NEW_VERSION_BEHAVIOR,hcdt.isNewVersionBehavior());
+//        ret.setAttribute(ATTR_CF_INMEMORY_COMPACTION_POLICY, (hcdt.getInMemoryCompaction() != null ? hcdt.getInMemoryCompaction().name():null));
+//        ret.setAttribute(ATTR_CF_MOB_COMPATCTPARTITION_POLICY, ( hcdt.getMobCompactPartitionPolicy() != null ? hcdt.getMobCompactPartitionPolicy().name():null));
+//        ret.setAttribute(ATTR_CF_MOB_ENABLED,hcdt.isMobEnabled());
+//        ret.setAttribute(ATTR_CF_NEW_VERSION_BEHAVIOR,hcdt.isNewVersionBehavior());
 
         return ret;
     }

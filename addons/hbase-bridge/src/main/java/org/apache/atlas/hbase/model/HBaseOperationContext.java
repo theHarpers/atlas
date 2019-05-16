@@ -24,8 +24,6 @@ import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
-import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import java.util.ArrayList;
@@ -39,16 +37,16 @@ public class HBaseOperationContext {
     private final HBaseAtlasHook.OPERATION operation;
     private final String                   user;
     private final NamespaceDescriptor      namespaceDescriptor;
-    private final TableDescriptor          tableDescriptor;
-    private final ColumnFamilyDescriptor[] columnFamilyDescriptors;
+    private final HTableDescriptor          tableDescriptor;
+    private final HColumnDescriptor[] columnFamilyDescriptors;
     private final TableName                tableName;
     private final String                   nameSpace;
     private final String                   columnFamily;
     private final String                   owner;
-    private final ColumnFamilyDescriptor   columnFamilyDescriptor;
+    private final HColumnDescriptor   columnFamilyDescriptor;
 
-    public HBaseOperationContext(NamespaceDescriptor namespaceDescriptor, String nameSpace, TableDescriptor tableDescriptor, TableName tableName, ColumnFamilyDescriptor[] columnFamilyDescriptors,
-                                 ColumnFamilyDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi , String user, String owner,
+    public HBaseOperationContext(NamespaceDescriptor namespaceDescriptor, String nameSpace, HTableDescriptor tableDescriptor, TableName tableName, HColumnDescriptor[] columnFamilyDescriptors,
+            HColumnDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi , String user, String owner,
                                  Map<String, String> hbaseConf) {
         this.namespaceDescriptor     = namespaceDescriptor;
         this.nameSpace               = nameSpace;
@@ -68,11 +66,11 @@ public class HBaseOperationContext {
         this(namespaceDescriptor, nameSpace, null, null, null, null, null, operation, ugi, user, owner, null);
     }
 
-    public  HBaseOperationContext(String nameSpace, TableDescriptor tableDescriptor, TableName tableName,  ColumnFamilyDescriptor[] columnFamilyDescriptors, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String,String> hbaseConf) {
+    public  HBaseOperationContext(String nameSpace, HTableDescriptor tableDescriptor, TableName tableName,  HColumnDescriptor[] columnFamilyDescriptors, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String,String> hbaseConf) {
         this(null, nameSpace, tableDescriptor, tableName, columnFamilyDescriptors, null, null, operation, ugi, user, owner, hbaseConf);
     }
 
-    public  HBaseOperationContext(String nameSpace, TableName tableName, ColumnFamilyDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String,String> hbaseConf) {
+    public  HBaseOperationContext(String nameSpace, TableName tableName, HColumnDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String,String> hbaseConf) {
         this(null, nameSpace, null, tableName, null, columnFamilyDescriptor, columnFamily, operation, ugi, user, owner, hbaseConf);
     }
 
@@ -98,11 +96,11 @@ public class HBaseOperationContext {
         return namespaceDescriptor;
     }
 
-    public TableDescriptor gethTableDescriptor() {
+    public HTableDescriptor gethTableDescriptor() {
         return tableDescriptor;
     }
 
-    public ColumnFamilyDescriptor[] gethColumnDescriptors() {
+    public HColumnDescriptor[] gethColumnDescriptors() {
         return columnFamilyDescriptors;
     }
 
@@ -114,7 +112,7 @@ public class HBaseOperationContext {
         return nameSpace;
     }
 
-    public ColumnFamilyDescriptor gethColumnDescriptor() {
+    public HColumnDescriptor gethColumnDescriptor() {
         return columnFamilyDescriptor;
     }
 
