@@ -49,7 +49,11 @@ public class HTable2_0 implements TableMask
     public Result[] get(List<Get> gets) throws IOException
     {
         if(LOG.isDebugEnabled()){
-            LOG.warn("Calling get, number: {}",gets.size());
+            StringBuilder builder=new StringBuilder();
+            for (byte b:gets.get(0).getRow()){
+                builder.append(b);
+            }
+            LOG.warn("Calling get, key: {}",builder.toString());
         }
         return table.get(gets);
     }
