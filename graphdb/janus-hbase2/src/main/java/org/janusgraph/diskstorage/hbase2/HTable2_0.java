@@ -20,12 +20,15 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
 
 public class HTable2_0 implements TableMask
 {
+    Logger LOG= LoggerFactory.getLogger(HTable2_0.class);
     private final Table table;
 
     public HTable2_0(Table table)
@@ -36,18 +39,27 @@ public class HTable2_0 implements TableMask
     @Override
     public ResultScanner getScanner(Scan filter) throws IOException
     {
+        if(LOG.isDebugEnabled()){
+            LOG.warn("Calling GetScanner");
+        }
         return table.getScanner(filter);
     }
 
     @Override
     public Result[] get(List<Get> gets) throws IOException
     {
+        if(LOG.isDebugEnabled()){
+            LOG.warn("Calling get, number: {}",gets.size());
+        }
         return table.get(gets);
     }
 
     @Override
     public void batch(List<Row> writes, Object[] results) throws IOException, InterruptedException
     {
+        if(LOG.isDebugEnabled()){
+            LOG.warn("Calling batch, number: {},{}",writes.size(),results.length);
+        }
         table.batch(writes, results);
         /* table.flushCommits(); not needed anymore */
     }
