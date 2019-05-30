@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.hbase2;
 
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -25,11 +26,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
-public class HTable2_0 implements TableMask
+public class HTable2_0
+        implements TableMask
 {
-    Logger LOG= LoggerFactory.getLogger(HTable2_0.class);
+    Logger LOG = LoggerFactory.getLogger(HTable2_0.class);
     private final Table table;
 
     public HTable2_0(Table table)
@@ -38,46 +39,67 @@ public class HTable2_0 implements TableMask
     }
 
     @Override
-    public ResultScanner getScanner(Scan filter) throws IOException
+    public ResultScanner getScanner(Scan filter)
+            throws IOException
     {
-        if(LOG.isDebugEnabled()){
+        if (LOG.isDebugEnabled()) {
             LOG.warn("Calling GetScanner");
         }
         return table.getScanner(filter);
     }
 
     @Override
-    public Result[] get(List<Get> gets) throws IOException
+    public Result[] get(List<Get> gets)
+            throws IOException
     {
 
-        Result[] rs= table.get(gets);
-        if(LOG.isDebugEnabled()){
-            StringBuilder builder=new StringBuilder("Calling get, key: ");
-            for (byte b:gets.get(0).getRow()){
-                builder.append(b);
-            }
-            builder.append(" ; column: ");
-            for (byte[] bs:gets.get(0).familySet()){
+        Result[] rs = table.get(gets);
+
+        if (LOG.isDebugEnabled()) {
+            StringBuilder builder = new StringBuilder("Calling get\tkey: ");
+            append(builder, gets.get(0).getRow());
+            builder.append("\tcolumn: ");
+            for (byte[] bs : gets.get(0).familySet()) {
                 builder.append(new String(bs));
                 builder.append(",");
             }
+            builder.append("\tfilter: ");
+            append(builder, gets.get(0).getFilter().toByteArray());
+//            builder.append("\n\tresults: ");
+//            for (Cell cell : rs[0].rawCells()) {
+//                builder.append("\n\t\tcolumn: ");
+//                builder.append(new String(cell.getFamily()));
+//                builder.append("\tqualifier: ");
+//                append(builder, cell.getQualifier());
+//                builder.append("\n\t\tvalue: ");
+//                append(builder, cell.getValue());
+//            }
             LOG.warn(builder.toString());
         }
         return rs;
     }
 
-    @Override
-    public void batch(List<Row> writes, Object[] results) throws IOException, InterruptedException
+    private void append(StringBuilder builder, byte[] bytes)
     {
-        if(LOG.isDebugEnabled()){
-            LOG.warn("Calling batch, number: {},{}",writes.size(),results.length);
+        for (byte b : bytes) {
+            builder.append(b);
+        }
+    }
+
+    @Override
+    public void batch(List<Row> writes, Object[] results)
+            throws IOException, InterruptedException
+    {
+        if (LOG.isDebugEnabled()) {
+            LOG.warn("Calling batch, number: {},{}", writes.size(), results.length);
         }
         table.batch(writes, results);
         /* table.flushCommits(); not needed anymore */
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
+            throws IOException
     {
         table.close();
     }
