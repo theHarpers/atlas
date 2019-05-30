@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class HTable2_0 implements TableMask
 {
@@ -48,14 +49,21 @@ public class HTable2_0 implements TableMask
     @Override
     public Result[] get(List<Get> gets) throws IOException
     {
+
+        Result[] rs= table.get(gets);
         if(LOG.isDebugEnabled()){
-            StringBuilder builder=new StringBuilder();
+            StringBuilder builder=new StringBuilder("Calling get, key: ");
             for (byte b:gets.get(0).getRow()){
                 builder.append(b);
             }
-            LOG.warn("Calling get, key: {}",builder.toString());
+            builder.append(" ; column: ");
+            for (byte[] bs:gets.get(0).familySet()){
+                builder.append(new String(bs));
+                builder.append(",");
+            }
+            LOG.warn(builder.toString());
         }
-        return table.get(gets);
+        return rs;
     }
 
     @Override
